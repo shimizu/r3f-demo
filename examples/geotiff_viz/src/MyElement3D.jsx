@@ -28,8 +28,12 @@ const Boxes = () => {
 
     // Boxの初期化
     const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ 
-        vertexColors: true 
+    const material = new THREE.MeshPhongMaterial({ 
+        vertexColors: true ,
+        emissive:0x000000,
+        specular:0xffffff,
+        shininess:0.1
+
     });
 
 
