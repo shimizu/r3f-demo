@@ -132,6 +132,7 @@ function MyElement3D(){
 
             <RandomizedLight />
 
+            <ambientLight intensity={0.5} />
 
             <OrbitControls
                 autoRotate={false}
@@ -153,7 +154,6 @@ function MyElement3D(){
             </EffectComposer>
 
 
-            <ambientLight intensity={0.5} />
 
             <Boxes />
 
