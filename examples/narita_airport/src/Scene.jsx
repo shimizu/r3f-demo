@@ -71,8 +71,9 @@ function generateMesh({data, fill, stroke} = props){
             const edges = new THREE.LineSegments(edgesGeometry, lineMaterial);
 
             // 作成したメッシュを配列に追加
-            meshes.push(mesh);
-            meshes.push(edges);
+            //meshes.push(mesh);
+            //meshes.push(edges);
+            meshes.push({ mesh, edges });
         })
 
 
@@ -82,12 +83,15 @@ function generateMesh({data, fill, stroke} = props){
 
 
 // 各階層ごとのグループを作成するコンポーネント
-const FloorGroup = ({ name, position, floorData, visible }) => (
+const FloorGroup = ({ name, position, floorData, visible, edgesOnly }) => (
     <group name={name} position={position} visible={visible}>
         {floorData.map((group, i) => (
             <group key={i} name={`${name}_${group.name}`} position-y={group.positionY}>
-                {group.meshes.map((mesh, index) => (
-                    <primitive object={mesh} key={index} />
+                {group.meshes.map(( {mesh, edges  }, index) => (
+                    <group key={index}>
+                        {!edgesOnly && <primitive object={mesh} />}
+                        <primitive object={edges} />
+                    </group>
                 ))}
             </group>
         ))}
@@ -104,6 +108,10 @@ function Scene(){
     //フロアメッシュ
     const [floors, setFloors] = useState({});
 
+    const state = useControls("ワイヤーフレーム", {
+        edgesOnly: {value:false, label:"on"}
+    })
+
     //フロア表示非表示切り替え
     const visibleFloors = useControls("フロア表示",
         {
@@ -117,6 +125,7 @@ function Scene(){
             NRT2_B1out: { value: true, label: "地下1階(駐車場)" },
             NRT2_B2: { value: true, label: "地下2階(駐車場)" },
         })
+
 
 
     useEffect(() => {
@@ -162,7 +171,7 @@ function Scene(){
             <ambientLight intensity={10} />
 
             {Object.entries(floors).map(([floor, { position, floorData }]) => (
-                <FloorGroup key={floor} name={floor} position={position} floorData={floorData} visible={visibleFloors[floor]} />
+                <FloorGroup key={floor} name={floor} position={position} floorData={floorData} visible={visibleFloors[floor]} edgesOnly={state.edgesOnly} />
             ))}
 
         </>
