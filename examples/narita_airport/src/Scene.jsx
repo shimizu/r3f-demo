@@ -65,15 +65,16 @@ function generateMesh({data, fill, stroke} = props){
             const material = new THREE.MeshBasicMaterial({ color: fill });
             const mesh = new THREE.Mesh(geometry, material);
 
+            // フィーチャのプロパティをメッシュに紐付け
+            mesh.userData = { properties: f.properties };
+
             // 外枠のエッジ用のジオメトリを生成
             const edgesGeometry = new THREE.EdgesGeometry(geometry);
             const lineMaterial = new THREE.LineBasicMaterial({ color: stroke }); // 外枠の色
             const edges = new THREE.LineSegments(edgesGeometry, lineMaterial);
 
             // 作成したメッシュを配列に追加
-            //meshes.push(mesh);
-            //meshes.push(edges);
-            meshes.push({ mesh, edges });
+            meshes.push({ mesh, edges, properties: f.properties });
         })
 
 
@@ -84,12 +85,16 @@ function generateMesh({data, fill, stroke} = props){
 
 // 各階層ごとのグループを作成するコンポーネント
 const FloorGroup = ({ name, position, floorData, visible, edgesOnly }) => (
-    <group name={name} position={position} visible={visible}>
+    <group name={name} position={position} visible={visible} >
         {floorData.map((group, i) => (
             <group key={i} name={`${name}_${group.name}`} position-y={group.positionY}>
-                {group.meshes.map(( {mesh, edges  }, index) => (
+                {group.meshes.map(({ mesh, edges, properties }, index) => (
                     <group key={index}>
-                        {!edgesOnly && <primitive object={mesh} />}
+                        {!edgesOnly && <primitive object={mesh} onClick={(e) => {
+                            if(!visible) return
+                            console.log("p", properties)
+                            e.stopPropagation()
+                        }} />}
                         <primitive object={edges} />
                     </group>
                 ))}
@@ -98,12 +103,16 @@ const FloorGroup = ({ name, position, floorData, visible, edgesOnly }) => (
     </group>
 );
 
+
 function Scene(){
+
+    //カメラ設定
     const controls = useRef()
     const {camera, gl } = useThree()
     useFrame(()=>{
         controls.current.update()
     })
+
 
     //フロアメッシュ
     const [floors, setFloors] = useState({});
