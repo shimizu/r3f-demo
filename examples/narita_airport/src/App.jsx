@@ -17,6 +17,7 @@ function App() {
     }>
         <Scene />
      </Canvas>
+     <div id='tooltip' />
     </>
   )
 }

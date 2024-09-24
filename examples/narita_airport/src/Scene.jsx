@@ -90,10 +90,34 @@ const FloorGroup = ({ name, position, floorData, visible, edgesOnly }) => (
             <group key={i} name={`${name}_${group.name}`} position-y={group.positionY}>
                 {group.meshes.map(({ mesh, edges, properties }, index) => (
                     <group key={index}>
-                        {!edgesOnly && <primitive object={mesh} onClick={(e) => {
-                            if(!visible) return
-                            console.log("p", properties)
-                            e.stopPropagation()
+                        {!edgesOnly && <primitive object={mesh} 
+                            onClick={(e) => {
+                                if(!visible) return
+
+                                const tooltip = document.querySelector("#tooltip")
+                                const w = tooltip.clientWidth
+
+                                tooltip.style.visibility = "visible"
+
+                                //console.log("e", e)
+                                //console.log("p", properties)
+
+                                tooltip.style.top = `${e.layerY}px`
+                                tooltip.style.left = `${e.layerX- (w/2)}px`
+
+
+                                const tbody = Object.keys(properties).map(key=>{
+                                    return `<tr><th>${key}</th><td>${properties[key]}</td></tr>`
+                                }).join("")
+
+                                const table = "<table>" + tbody + "</table>"
+
+                                tooltip.innerHTML = table
+
+                                e.stopPropagation()
+                        }}
+                        onPointerOut={()=>{
+                            console.log("pointout")
                         }} />}
                         <primitive object={edges} />
                     </group>
@@ -112,6 +136,7 @@ function Scene(){
     useFrame(()=>{
         controls.current.update()
     })
+
 
 
     //フロアメッシュ
@@ -135,9 +160,32 @@ function Scene(){
             NRT2_B2: { value: true, label: "地下2階(駐車場)" },
         })
 
+    //カメライベント設定
+    useEffect(()=>{
+
+        if (controls.current) {
+            // カメラが移動または回転したときに発火するイベント
+            const handleChange = () => {
+                const tooltip = document.querySelector("#tooltip")
+                tooltip.style.visibility = "hidden"
+                tooltip.innerHTML = ""
+            };
+
+            // `change`イベントを監視
+            controls.current.addEventListener('change', handleChange);
+
+            // コンポーネントがアンマウントされる際にイベントリスナーを削除
+            return () => {
+                controls.current.removeEventListener('change', handleChange);
+            };
+        }
+
+    }, [controls])
 
 
+    //geojson読み込み
     useEffect(() => {
+        
         const floorConfigs = [
             { floor: 'NRT2_B2', position: [-15, -4, 15], files: ['Space', 'Fixture', 'Floor'], colors: [0x00ff00, 0xff0000, 0xffa500] },
             { floor: 'NRT2_B1out', position: [-15, -2, 15], files: ['Space', 'Fixture', 'Floor'], colors: [0x00ff00, 0xff0000, 0xffa500] },

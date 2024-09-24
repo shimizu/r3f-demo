@@ -8,3 +8,33 @@ body {
   height: 100vh;
   background-color: black;
 }
+
+
+#tooltip {
+  font-size: 0.6em;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: white;
+  visibility: hidden;
+
+  display: inline-block;
+    padding: 5px;
+    /* 余白 */
+    white-space: nowrap;
+    /* テキストを折り返さない */
+    font-size: 0.8rem;
+    /* フォントサイズ */
+    line-height: 1.3;
+    /* 行間 */
+    background: #333;
+    /* 背景色 */
+    color: #fff;
+    /* 文字色 */
+    border-radius: 3px;
+    /* 角丸 */
+    transition: 0.3s ease-in;
+    /* アニメーション */
+    user-select: none;
+}
+
