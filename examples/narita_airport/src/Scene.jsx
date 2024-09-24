@@ -115,9 +115,9 @@ function Scene(){
     //フロア表示非表示切り替え
     const visibleFloors = useControls("フロア表示",
         {
-            NRT2_4out: { value: true, label: "4階(外)" },
+            NRT2_4out: { value: true, label: "4階(out)" },
             NRT2_4: { value: true, label: "4階" },
-            NRT2_3out: { value: true, label: "3階(外)" },
+            NRT2_3out: { value: true, label: "3階(out)" },
             NRT2_3: { value: true, label: "3階" },
             NRT2_2: { value: true, label: "2階" },
             NRT2_1: { value: true, label: "1階"},
