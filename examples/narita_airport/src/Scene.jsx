@@ -4,7 +4,8 @@ import * as THREE from "three"
 import { useControls } from "leva"
 import { useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
-import chroma from 'chroma-js';
+import { useSpring, a } from '@react-spring/three';
+
 
 
 import { geoMercator } from "d3-geo";
@@ -84,48 +85,65 @@ function generateMesh({data, fill, stroke} = props){
 
 
 // 各階層ごとのグループを作成するコンポーネント
-const FloorGroup = ({ name, position, floorData, visible, edgesOnly }) => (
-    <group name={name} position={position} visible={visible} >
-        {floorData.map((group, i) => (
-            <group key={i} name={`${name}_${group.name}`} position-y={group.positionY}>
-                {group.meshes.map(({ mesh, edges, properties }, index) => (
-                    <group key={index}>
-                        {!edgesOnly && <primitive object={mesh} 
-                            onClick={(e) => {
-                                if(!visible) return
+const FloorGroup = ({ name, position, floorData, visible, edgesOnly }) =>{ 
+    const [isVisible, setIsVisible] = useState(true); // visibleの状態管理
+    
+    // アニメーションを設定するuseSpring
+    const { positionSpring } = useSpring({
+        positionSpring: visible ? position : [position[0], position[1] + 2, position[2]],
+        config: { mass: 1, tension: 170, friction: 26 },
+        onStart:()=>{
+            setIsVisible(true)
+        },
+        onRest: () => {
+            // アニメーション終了後にvisibleをfalseにする
+            setIsVisible(visible);
+        },
+    });
+    
+    return (
+        <a.group name={name} position={positionSpring} visible={isVisible} >
+            {floorData.map((group, i) => (
+                <group key={i} name={`${name}_${group.name}`} position-y={group.positionY}>
+                    {group.meshes.map(({ mesh, edges, properties }, index) => (
+                        <group key={index}>
+                            {!edgesOnly && <primitive object={mesh} 
+                                onClick={(e) => {
+                                    if(!visible) return
 
-                                const tooltip = document.querySelector("#tooltip")
-                                const w = tooltip.clientWidth
+                                    const tooltip = document.querySelector("#tooltip")
+                                    const w = tooltip.clientWidth
 
-                                tooltip.style.visibility = "visible"
+                                    tooltip.style.visibility = "visible"
 
-                                //console.log("e", e)
-                                //console.log("p", properties)
+                                    //console.log("e", e)
+                                    //console.log("p", properties)
 
-                                tooltip.style.top = `${e.layerY}px`
-                                tooltip.style.left = `${e.layerX- (w/2)}px`
+                                    tooltip.style.top = `${e.layerY}px`
+                                    tooltip.style.left = `${e.layerX- (w/2)}px`
 
 
-                                const tbody = Object.keys(properties).map(key=>{
-                                    return `<tr><th>${key}</th><td>${properties[key]}</td></tr>`
-                                }).join("")
+                                    const tbody = Object.keys(properties).map(key=>{
+                                        return `<tr><th>${key}</th><td>${properties[key]}</td></tr>`
+                                    }).join("")
 
-                                const table = "<table>" + tbody + "</table>"
+                                    const table = "<table>" + tbody + "</table>"
 
-                                tooltip.innerHTML = table
+                                    tooltip.innerHTML = table
 
-                                e.stopPropagation()
-                        }}
-                        onPointerOut={()=>{
-                            console.log("pointout")
-                        }} />}
-                        <primitive object={edges} />
-                    </group>
-                ))}
-            </group>
-        ))}
-    </group>
-);
+                                    e.stopPropagation()
+                            }}
+                            onPointerOut={()=>{
+                                console.log("pointout")
+                            }} />}
+                            <primitive object={edges} />
+                        </group>
+                    ))}
+                </group>
+            ))}
+        </a.group>
+    )
+};
 
 
 function Scene(){
