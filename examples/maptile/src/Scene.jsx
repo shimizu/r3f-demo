@@ -26,7 +26,7 @@ function MapTile({ x, y, z, margin ,index, length}) {
     return (
         <mesh position={[positionX - (gridSize / 2), positionY + (gridSize / 2), 0]}>
             <planeGeometry args={[1, 1]} />
-            <meshBasicMaterial map={texture} />
+            <meshBasicMaterial map={texture} side={THREE.DoubleSide} />
         </mesh>
     );
 }
