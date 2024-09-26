@@ -32,11 +32,11 @@ function MapTile({ x, y, z, margin ,index, length}) {
 }
 
 
-function TileMap({ latitude, longitude , zoom}) {
+function TileMap({ longitude, latitude,  zoom}) {
     const zoomLevel = zoom;
     const width = 1024;
     const height = 1024;
-    const center = [latitude, longitude]; // サンフランシスコの座標 (緯度, 経度)
+    const center = [longitude, latitude]; // サンフランシスコの座標 (緯度, 経度)
     const margin = 0; // タイル間のマージン
 
     // d3.geoMercatorを使って投影を設定
@@ -103,8 +103,8 @@ function Scene(){
 
     const { latitude, longitude, zoom } = useControls(
             {
-                latitude: -122.4183,
-                longitude: 37.7750,
+                longitude: {value:-122.4183, min:-180, max:180, step:0.01}, 
+                latitude: {value:37.7750, min: -90, max:90, step:0.01 },
                 zoom:{value:12, min:0, max:19, step:1}
             })
 
