@@ -1,0 +1,1 @@
+import{B as o}from"./geotiff-L5s2wz-l.js";import"./react-4ldeB94U.js";import"./drei-BQFFepro.js";import"./three-BIBagZx2.js";import"./fiber-DLnro_FV.js";class s extends o{decodeBlock(e){return e}}export{s as default};
