@@ -9,6 +9,7 @@ function App() {
 
   return (
     <>
+    <div id="title">成田空港ターミナル２</div>
      <Canvas 
       shadows
       camera={{
@@ -18,6 +19,15 @@ function App() {
         <Scene />
      </Canvas>
      <div id='tooltip' />
+      <div className="attribution">
+        <a
+          href="https://www.geospatial.jp/ckan/dataset/mlit-indoor-narita-airport-r2"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          © G空間センター
+        </a>
+      </div>
     </>
   )
 }
