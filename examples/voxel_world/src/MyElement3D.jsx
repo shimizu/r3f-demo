@@ -3,7 +3,7 @@ import { MapControls, OrbitControls } from "@react-three/drei"
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three"
 import { useControls } from "leva"
-import { EffectComposer, Autofocus } from "@react-three/postprocessing";
+import { EffectComposer, Autofocus, DepthOfField } from "@react-three/postprocessing";
 
 import { fromUrl } from 'geotiff';
 
@@ -85,13 +85,46 @@ const Boxes = () => {
 
     // Boxの初期化
     const geometry = new THREE.BoxGeometry(1, 1, 1);
+    /*
     const material = new THREE.MeshPhongMaterial({ 
         vertexColors: true ,
         emissive:0x000000,
         specular:0xffffff,
-        shininess:0.1
+        shininess:0.1,
 
     });
+    */
+
+const material = new THREE.ShaderMaterial({
+  vertexShader: `
+    varying vec3 vColor;
+    varying vec3 vPosition;
+    attribute vec3 color; // インスタンスごとのカラーを受け取る
+
+    void main() {
+      // モデル行列を適用して、インスタンスごとの変換を反映
+      vec4 worldPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);
+      vPosition = worldPosition.xyz;
+
+      // カラーを頂点シェーダーからフラグメントシェーダーに渡す
+      vColor = color;
+
+      gl_Position = projectionMatrix * viewMatrix * worldPosition;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vColor;
+    varying vec3 vPosition;
+
+    void main() {
+      // インスタンスごとのカラーを反映
+      gl_FragColor = vec4(vColor, 1.0);
+    }
+  `,
+  wireframe: false,
+});
+
+
 
     const [tiff, setTiff] = useState(null)
 
@@ -172,7 +205,6 @@ function Effect(){
     return (
         <EffectComposer>
 
-            <Autofocus/>
         </EffectComposer>
     )
 }
