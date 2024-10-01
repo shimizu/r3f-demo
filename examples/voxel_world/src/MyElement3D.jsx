@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState, forwardRef } from "react"
-import { MapControls, OrbitControls } from "@react-three/drei"
+import { MapControls, OrbitControls, ContactShadows } from "@react-three/drei"
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three"
 import { useControls } from "leva"
@@ -85,7 +85,8 @@ const Boxes = () => {
 
     // Boxの初期化
     const geometry = new THREE.BoxGeometry(1, 1, 1);
-    /*
+    
+    
     const material = new THREE.MeshPhongMaterial({ 
         vertexColors: true ,
         emissive:0x000000,
@@ -93,37 +94,24 @@ const Boxes = () => {
         shininess:0.1,
 
     });
-    */
+    
 
-const material = new THREE.ShaderMaterial({
-  vertexShader: `
-    varying vec3 vColor;
-    varying vec3 vPosition;
-    attribute vec3 color; // インスタンスごとのカラーを受け取る
+    useEffect(()=> {
+        if(!material) return
+        const loadCubeTexture = async () =>{
+            const envMapLoader = new THREE.CubeTextureLoader();
+            const envMap = envMapLoader.load([
+                'images/boxes.png', 'images/boxes.png',
+                'images/boxes.png', 'images/boxes.png',
+                'images/boxes.png', 'images/boxes.png',
+                'images/boxes.png', 'images/boxes.png'
+            ]);
 
-    void main() {
-      // モデル行列を適用して、インスタンスごとの変換を反映
-      vec4 worldPosition = modelMatrix * instanceMatrix * vec4(position, 1.0);
-      vPosition = worldPosition.xyz;
+            material.uniforms.envMap.value = envMap;
 
-      // カラーを頂点シェーダーからフラグメントシェーダーに渡す
-      vColor = color;
+        }
 
-      gl_Position = projectionMatrix * viewMatrix * worldPosition;
-    }
-  `,
-  fragmentShader: `
-    varying vec3 vColor;
-    varying vec3 vPosition;
-
-    void main() {
-      // インスタンスごとのカラーを反映
-      gl_FragColor = vec4(vColor, 1.0);
-    }
-  `,
-  wireframe: false,
-});
-
+    }, [material])
 
 
     const [tiff, setTiff] = useState(null)
@@ -246,10 +234,10 @@ function MyElement3D(){
                 enableDamping={true}
                 dampingFactor={0.1}
                 maxAzimuthAngle={500}
-                minDistance={50}
                 maxDistance={400}
 
             />   
+
 
 
             <group rotation-y={-90 * Math.PI / 180} position={[0,0, -100]} >
