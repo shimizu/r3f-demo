@@ -1,2 +1,0 @@
-# React Three Fiber Template
-
