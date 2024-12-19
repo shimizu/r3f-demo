@@ -8,80 +8,9 @@ import { useSpring, a } from '@react-spring/three';
 
 
 
-import { geoMercator } from "d3-geo";
-import convertGeoJSONToScreenCoordinates from "./convertGeoJSONToScreenCoordinates"
+import { convertGeoJSONToScreenCoordinates, createExtrudedGeometry, loadGeoJSON } from "./geoUtil"
 
 
-// ポリゴンからExtrudeGeometryを返す関数
-const createExtrudedGeometry = (coordinates, depth) => {
-    const shape = new THREE.Shape();
-
-    // ポリゴンの座標からShapeを作成
-    coordinates[0].forEach((point, index) => {
-        const [x, y] = point.map((coord, idx) => coord );
-        if (index === 0) {
-            // 最初の点のみmoveTo
-            shape.moveTo(x, y);
-        } else if (index + 1 === coordinates[0].length) {
-            // 最後の点のみclosePathで閉じる
-            shape.closePath();
-        } else {
-            // それ以外はlineTo
-            shape.lineTo(x, y);
-        }
-    });
-    return new THREE.ExtrudeGeometry(shape, {
-        steps: 1,
-        depth: depth,
-        bevelEnabled: false,
-    });
-};
-
-
-// GeoJSONデータを読み込み、メッシュを生成する関数
-const loadGeoJSON = async (url, style, callback) => {
-    const res = await fetch(url).then((res) => res.json());
-    const projection = geoMercator().fitExtent([[0, 0], [30, 30]], res);
-    const data = convertGeoJSONToScreenCoordinates(res, projection);
-    const meshes = generateMesh({ data, fill: style.fill, stroke: style.stroke });
-    callback(meshes);
-};
-
-
-function generateMesh({data, fill, stroke} = props){
-    const meshes = []
-
-    data.features
-        .filter(f => f.geometry)
-        .forEach((f) => {
-
-            //ExtrudeGeometryをdataを元に生成
-            const geometry = createExtrudedGeometry(f.geometry, 0.01);
-
-            // 90度回転させる
-            const matrix = new THREE.Matrix4().makeRotationX(Math.PI / -2);
-            geometry.applyMatrix4(matrix)
-
-            // 4. マテリアルとメッシュの作成
-            const material = new THREE.MeshBasicMaterial({ color: fill });
-            const mesh = new THREE.Mesh(geometry, material);
-
-            // フィーチャのプロパティをメッシュに紐付け
-            mesh.userData = { properties: f.properties };
-
-            // 外枠のエッジ用のジオメトリを生成
-            const edgesGeometry = new THREE.EdgesGeometry(geometry);
-            const lineMaterial = new THREE.LineBasicMaterial({ color: stroke }); // 外枠の色
-            const edges = new THREE.LineSegments(edgesGeometry, lineMaterial);
-
-            // 作成したメッシュを配列に追加
-            meshes.push({ mesh, edges, properties: f.properties });
-        })
-
-
-    return meshes
-
-}
 
 
 // 各階層ごとのグループを作成するコンポーネント
@@ -201,9 +130,9 @@ function Scene(){
         
         const floorConfigs = [
             { floor: 'TokyoSt_B2', position: [-15, -4, 15], files: ['./data/TokyoSt_B2_Foor.geojson', './data/TokyoSt_B2_Space.geojson'], colors: [0xffa500, 0x00ff00] },
-            { floor: 'TokyoSt_B1', position: [-15, -2, 15], files: ['./data/TokyoSt_B1_Foor.geojson', './data/TokyoSt_B1_Space.geojson'], colors: [0xffa500, 0x00ff00] },
-            { floor: 'TokyoSt_0', position: [-15, 0, 15], files: ['./data/TokyoSt_0_Foor.geojson', './data/TokyoSt_0_Space.geojson'], colors: [0xffa500, 0x00ff00] },
-            { floor: 'TokyoSt_1', position: [-15, 2, 15], files: ['./data/TokyoSt_1_Foor.geojson', './data/TokyoSt_1_Space.geojson'], colors: [0xffa500, 0x00ff00] },
+//            { floor: 'TokyoSt_B1', position: [-15, -2, 15], files: ['./data/TokyoSt_B1_Foor.geojson', './data/TokyoSt_B1_Space.geojson'], colors: [0xffa500, 0x00ff00] },
+//            { floor: 'TokyoSt_0', position: [-15, 0, 15], files: ['./data/TokyoSt_0_Foor.geojson', './data/TokyoSt_0_Space.geojson'], colors: [0xffa500, 0x00ff00] },
+//            { floor: 'TokyoSt_1', position: [-15, 2, 15], files: ['./data/TokyoSt_1_Foor.geojson', './data/TokyoSt_1_Space.geojson'], colors: [0xffa500, 0x00ff00] },
         ];
 
         floorConfigs.forEach(async ({ floor, position, files, colors }) => {
