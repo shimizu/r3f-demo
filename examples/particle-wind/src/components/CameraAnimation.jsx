@@ -1,66 +1,87 @@
+// CameraAnimation.jsx - カメラのアニメーションと制御を管理するコンポーネント
+
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useThree } from '@react-three/fiber';
-import { useGLTF, OrbitControls } from '@react-three/drei'
-import { useSpring, a, config } from "@react-spring/three";
+import { useThree } from '@react-three/fiber';  // Three.jsのカメラ制御用フック
+import { useGLTF, OrbitControls } from '@react-three/drei'  // カメラ軌道制御用コンポーネント
+import { useSpring, a, config } from "@react-spring/three";  // アニメーション制御用ライブラリ
 
 import { Vector3 } from "three";
 
+// 一時的なVector3オブジェクトを作成（メモリ効率化のため再利用）
 const t = new Vector3();
 
-
-
-// カメララッパーコンポーネント
+// カメラの位置と注視点を制御するヘルパーコンポーネント
 const CameraWrapper = ({ cameraPosition, target }) => {
+    // Three.jsのカメラオブジェクトを取得
     const { camera } = useThree();
+
+    // カメラの位置を設定（配列を座標として展開）
     camera.position.set(...cameraPosition);
+
+    // カメラの注視点を設定（一時Vector3オブジェクトを使用）
     camera.lookAt(t.set(...target));
-    return null;
+
+    return null;  // 表示要素なし（制御のみ）
 };
 
-
-
+// メインのカメラアニメーションコンポーネント
 function CameraAnimation({ preset = 0, cameraPositions }) {
+    // OrbitControlsへの参照を保持
     const orbitRef = useRef();
+
+    // 現在のカメラ設定を状態として保持
     const [cameraSettings, setCameraSettings] = useState(cameraPositions[0]);
+
+    // シーンのカメラを取得
     const { camera } = useThree();
 
+    // プリセットが変更されたときの処理
     useEffect(() => {
-        // プリセット番号に対応するカメラ設定を取得
+        // プリセット番号に対応するカメラ設定を取得（無効な場合はデフォルト使用）
         const newSettings = cameraPositions[preset] || cameraPositions[0];
         setCameraSettings(newSettings);
-    }, [preset]);
+    }, [preset]);  // プリセットが変更されたときのみ実行
 
-
+    // アニメーションのスプリング設定
     const s = useSpring({
-        from: cameraPositions[0],
-        //config: config.wobbly,
+        from: cameraPositions[0],  // 初期位置
         config: {
-            mass: 2,
-            tension: 150,
-            friction: 30,
-            clamp: true
+            mass: 2,        // 質量（慣性の大きさ）
+            tension: 150,   // バネの強さ
+            friction: 30,   // 摩擦（減衰）
+            clamp: true     // 目標値を超えないように制限
         }
     });
 
-    s.position.start({ from: camera.position.toArray(), to: cameraSettings.position });
+    // カメラ位置のアニメーション開始
+    s.position.start({
+        from: camera.position.toArray(),  // 現在位置から
+        to: cameraSettings.position       // 目標位置へ
+    });
+
+    // 注視点のアニメーション開始
     s.target.start({
         from: orbitRef.current ? orbitRef.current.target.toArray() : [0, 0, 0],
         to: cameraSettings.target
     });
 
+    // アニメーション可能なCameraWrapperコンポーネントを生成（メモ化）
     const AnimatedNavigation = useMemo(() => a(CameraWrapper), []);
 
     return (
         <>
+            {/* カメラの軌道制御設定 */}
             <OrbitControls
                 ref={orbitRef}
-                minPolarAngle={Math.PI / 5} // 垂直回転の最小角度（真上からの視点を許可）
-                maxPolarAngle={Math.PI / 2} // 垂直回転の最大角度（地面と水平な視点まで）
-                makeDefault
-                enableDamping={true}
-                dampingFactor={0.05}
-                target={new Vector3(...cameraSettings.target)}
+                minPolarAngle={Math.PI / 5}  // 垂直回転の最小角度（真上からの視点を許可）
+                maxPolarAngle={Math.PI / 2}  // 垂直回転の最大角度（地面と水平な視点まで）
+                makeDefault                   // デフォルトコントロールとして設定
+                enableDamping={true}         // カメラ移動の減衰を有効化
+                dampingFactor={0.05}         // 減衰の強さ
+                target={new Vector3(...cameraSettings.target)}  // 注視点の設定
             />
+
+            {/* アニメーション付きカメラ制御コンポーネント */}
             <AnimatedNavigation cameraPosition={s.position} target={s.target} />
         </>
     );

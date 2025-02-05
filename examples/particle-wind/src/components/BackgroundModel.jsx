@@ -3,7 +3,7 @@ import { useGLTF } from '@react-three/drei'
 
 
 function BackgroundModel(props) {
-    const { nodes, materials } = useGLTF('/./gltf/america.glb')
+    const { nodes, materials } = useGLTF('./gltf/america.glb')
     return (
         <group {...props} dispose={null}>
             <group rotation={[Math.PI / 2, 0, 0]} scale={0.0215}>
@@ -24,6 +24,5 @@ function BackgroundModel(props) {
     )
 }
 
-useGLTF.preload('./gltf/america.glb')
 
 export default BackgroundModel
