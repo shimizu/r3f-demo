@@ -11,6 +11,7 @@ import CameraAnimation from './components/CameraAnimation';
 import BackgroundModel  from './components/BackgroundModel';
 import Particles from './components/Particles';
 import LocationMarkers from './components/LocationMarkers'; 
+import FireMarkers from './components/FireMarkers';
 
 import { geoEquirectangular } from "d3-geo"
 
@@ -32,8 +33,8 @@ const WIND_DATA = {
 
 //風速データpng
 const WIND_DATA_OPTIONS = {
-    '01/14 14:00': './img/wind_data1.png',
-    '01/08 12:00': './img/wind_data2.png',
+    '01/14 14:00': './data/wind_data1.png',
+    '01/08 12:00': './data/wind_data2.png',
 };
 
 
@@ -91,7 +92,6 @@ export const cameraOptions = cameraPositions.reduce((acc, pos, index) => {
 }, {});
 
 
-
 function Scene() {
     const [windData, setWindData] = useState(null)
     const [dimensions, setDimensions] = useState(null)
@@ -105,10 +105,19 @@ function Scene() {
 
     //ポイントロケーション
     const [points, setPoints] = useState([
-        { name: "Long Angeles", lnglat: [-118.2445091, 34.05464], position: null },
-        { name: "Long Beach", lnglat: [-118.1949714, 33.7700331], position:null},
-        { name: "Malibu", lnglat: [-118.6918046, 34.0919682], position: null },
+        { name: "ロサンゼルス", lnglat: [-118.2445091, 34.05464], position: null },
+        { name: "ロングビーチ", lnglat: [-118.1949714, 33.7700331], position:null},
+        { name: "マリブ", lnglat: [-118.6918046, 34.0919682], position: null },
     ])
+
+
+    //ポイントロケーション
+    const [firePoints, setFirePoints] = useState([
+        { name: "ロサンゼルス", lnglat: [-118.3245091, 34.15464], position: null },
+        { name: "ロングビーチ", lnglat: [-118.00049714, 33.7700331], position: null },
+        { name: "マリブ", lnglat: [-118.6918046, 34.2919682], position: null },
+    ])
+
 
 
     // UI、設定
@@ -159,6 +168,14 @@ function Scene() {
             position: projection(d.lnglat)
         })))
 
+        //火災ポイントデータの座標を変換
+        setFirePoints(p => p.map(d => ({
+            ...d,
+            position: projection(d.lnglat)
+        })))
+
+
+
         ctx.drawImage(img, 0, 0)
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
 
@@ -189,7 +206,7 @@ function Scene() {
 
                 {/*背景モデルの表示*/}
                 <BackgroundModel rotation={[THREE.MathUtils.degToRad(90), 0, 0]} scale={0.54} />
-
+                
                 {/* パーティクル */}
                 {windData && dimensions && (
                     <Particles
@@ -202,6 +219,8 @@ function Scene() {
             </group>
 
             <LocationMarkers points={points} />
+
+            <FireMarkers points={firePoints} />
 
 
             <CameraAnimation preset={preset} cameraPositions={cameraPositions}/>

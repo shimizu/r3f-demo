@@ -72,8 +72,8 @@ const Particles = ({
 
             // パーティクルの色を初期化（白色）
             colors[i * 4] = 1     // R
-            colors[i * 4 + 1] = 1 // G
-            colors[i * 4 + 2] = 1 // B
+            colors[i * 4 + 1] = 0.5 // G
+            colors[i * 4 + 2] = 0.1 // B
             colors[i * 4 + 3] = opacity // 透明度
         }
         return { points, colors }
