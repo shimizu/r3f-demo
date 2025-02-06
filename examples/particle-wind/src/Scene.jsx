@@ -92,6 +92,8 @@ export const cameraOptions = cameraPositions.reduce((acc, pos, index) => {
 }, {});
 
 
+
+
 function Scene() {
     const [windData, setWindData] = useState(null)
     const [dimensions, setDimensions] = useState(null)
@@ -121,18 +123,22 @@ function Scene() {
 
 
     // UI、設定
-    const { preset, selectedWindData } = useControls({
+    const { preset } = useControls("camera", {
         preset: {
             options: cameraOptions,  // 選択肢をオブジェクトとして渡す
             value: 0,               // デフォルト値
             label: "カメラ位置"
-        },
+        },   
+    });
+
+    const { selectedWindData } = useControls("wind",{
         selectedWindData: {
             options: Object.keys(WIND_DATA_OPTIONS),
             value: Object.keys(WIND_DATA_OPTIONS)[0],
             label: "風データ"
-        }     
+        }
     });
+    
 
 
     //データテクスチャの読み込み

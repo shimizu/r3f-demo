@@ -1,6 +1,6 @@
 // CameraAnimation.jsx - カメラのアニメーションと制御を管理するコンポーネント
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, memo } from 'react';
 import { useThree } from '@react-three/fiber';  // Three.jsのカメラ制御用フック
 import { useGLTF, OrbitControls } from '@react-three/drei'  // カメラ軌道制御用コンポーネント
 import { useSpring, a, config } from "@react-spring/three";  // アニメーション制御用ライブラリ
@@ -28,12 +28,11 @@ const CameraWrapper = ({ cameraPosition, target }) => {
 function CameraAnimation({ preset = 0, cameraPositions }) {
     // OrbitControlsへの参照を保持
     const orbitRef = useRef();
+    const { camera } = useThree();
 
     // 現在のカメラ設定を状態として保持
     const [cameraSettings, setCameraSettings] = useState(cameraPositions[0]);
 
-    // シーンのカメラを取得
-    const { camera } = useThree();
 
     // プリセットが変更されたときの処理
     useEffect(() => {
@@ -42,28 +41,34 @@ function CameraAnimation({ preset = 0, cameraPositions }) {
         setCameraSettings(newSettings);
     }, [preset]);  // プリセットが変更されたときのみ実行
 
-    // アニメーションのスプリング設定
-    const s = useSpring({
-        from: cameraPositions[0],  // 初期位置
+    // useSpringをコントロールするAPIを取得するための記述
+    const [springs, api] = useSpring(() => ({
+        // 初期値は現在のカメラ位置とOrbitControlsのtarget（なければ[0, 0, 0]）から設定
+        position: camera.position.toArray(),
+        target: orbitRef.current ? orbitRef.current.target.toArray() : [0, 0, 0],
         config: {
-            mass: 2,        // 質量（慣性の大きさ）
-            tension: 150,   // バネの強さ
-            friction: 30,   // 摩擦（減衰）
-            clamp: true     // 目標値を超えないように制限
+            mass: 2,
+            tension: 150,
+            friction: 30,
+            clamp: true,
         }
-    });
+    }));
 
-    // カメラ位置のアニメーション開始
-    s.position.start({
-        from: camera.position.toArray(),  // 現在位置から
-        to: cameraSettings.position       // 目標位置へ
-    });
 
-    // 注視点のアニメーション開始
-    s.target.start({
-        from: orbitRef.current ? orbitRef.current.target.toArray() : [0, 0, 0],
-        to: cameraSettings.target
-    });
+    // プリセット変更時にアニメーションを実行する
+    useEffect(() => {
+        // 現在の状態から新しい設定へアニメーションする
+        api.start({
+            // fromを明示的に指定しないと、現在の状態が自動的に利用される
+            to: {
+                position: cameraSettings.position,
+                target: cameraSettings.target,
+            },
+            // 必要に応じてリセットしない設定を付ける
+            reset: false,
+        });
+    }, [cameraSettings, api]);
+
 
     // アニメーション可能なCameraWrapperコンポーネントを生成（メモ化）
     const AnimatedNavigation = useMemo(() => a(CameraWrapper), []);
@@ -82,9 +87,9 @@ function CameraAnimation({ preset = 0, cameraPositions }) {
             />
 
             {/* アニメーション付きカメラ制御コンポーネント */}
-            <AnimatedNavigation cameraPosition={s.position} target={s.target} />
+            <AnimatedNavigation cameraPosition={springs.position} target={springs.target} />
         </>
     );
 }
 
-export default CameraAnimation
+export default memo(CameraAnimation)
