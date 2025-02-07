@@ -44,7 +44,7 @@ const LocationLabel = ({ point }) => {
                 fixedAxis={[0, 1, 0]}  // Y軸を固定軸として使用
             >
                 <Text
-                    fontSize={0.1}
+                    fontSize={0.05}
                     color="white"
                     anchorX="center"
                     anchorY="middle"
