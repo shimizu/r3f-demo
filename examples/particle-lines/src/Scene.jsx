@@ -32,14 +32,13 @@ function Scene(){
             <OrbitControls />
 
             <ambientLight intensity={0.5} />
-            <RandomizedLight />
-
+            <directionalLight position={[10, 10, 5]} intensity={2} />
 
             <EffectComposer>
                 <Bloom
                     intensity={1}
                     mipmapBlur={false}
-                    luminanceThreshold={0.9}
+                    luminanceThreshold={1}
                     luminanceSmoothing={0.025}
                 />
             </EffectComposer>
@@ -47,12 +46,12 @@ function Scene(){
 
             <mesh position={[start[0], -1, start[1]]}>
                 <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial color={0xffffff} roughness={0.5}/>
+                <meshStandardMaterial color={"white"} emissiveIntensity={2} toneMapped={false}  />
             </mesh>
 
             <mesh position={[end[0], -1, end[1]]}>
                 <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial color={0xff0000} roughness={0.5} />
+                <meshStandardMaterial color={"red"} />
             </mesh>
 
             <group position={[0, -1, 0]}>
@@ -60,17 +59,16 @@ function Scene(){
             </group>
 
 
+
             <mesh position={[0, 0, 0]}>
                 <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial color={0x00ff00} roughness={0.5} />
+                <meshStandardMaterial color={"green"} emissiveIntensity={2} toneMapped={false} />
             </mesh>
 
             <mesh position={[-3, 3, -2]}>
                 <boxGeometry args={[1, 1, 1]} />
-                <meshStandardMaterial color={0xff0000} roughness={0.5} />
+                <meshStandardMaterial color={"red"} roughness={0.5} />
             </mesh>
-
-
 
             <PathParticle pathPointList={[[0, 0, 0], [3, 0, 0], [3, 0, -2], [3, 3, -2], [-3, 3, -2]]} count={3000} />
 
