@@ -67,19 +67,13 @@ export const cameraPositions = [
     },
     {
         id: 'position1',
-        label: 'ロングビーチ',
+        label: '視点１',
         position: [0, 0.5, 0.75],
         target: [0.207118200343956, 0, 0.207118200343956]
     },
     {
         id: 'position2',
-        label: 'マリブ',
-        position: [-0.5, 0.25, 0.3],
-        target: [-0.4300178547923963, 0, -0.3419753274768027]
-    },
-    {
-        id: 'position2',
-        label: 'ロサンゼルス',
+        label: '視点２',
         position: [0.1, 0.5, -0.75],
         target: [0.207118200343956, 0, -0.2888043429859337]
     }
@@ -122,20 +116,11 @@ function Scene() {
         },   
     });
 
-    const { selectedWindData } = useControls("snow",{
-        selectedWindData: {
-            options: Object.keys(WIND_DATA_OPTIONS),
-            value: Object.keys(WIND_DATA_OPTIONS)[0],
-            label: "雪データ"
-        }
-    });
-    
-
 
     //データテクスチャの読み込み
     const dataTexture = useLoader(
         THREE.TextureLoader,
-        WIND_DATA_OPTIONS[selectedWindData]
+        "./data/snow_data.png"
     );
     dataTexture.minFilter = THREE.NearestFilter
     dataTexture.magFilter = THREE.NearestFilter

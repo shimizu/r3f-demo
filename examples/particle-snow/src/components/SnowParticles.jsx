@@ -1,5 +1,3 @@
-
-//SnowParticles.jsx
 import { useRef, useMemo, useEffect, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -8,126 +6,174 @@ const SnowParticles = ({
     count = 2000,
     sizeRange = { min: 0, max: 0.2 },
     opacity = 0.8,
-    fallSpeed = 0.005,
+    baseFallSpeed = 0.005,
+    maxFallSpeed = 0.015,
     position = { minZ: 0, maxZ: 1 },
-    snowData, //imagedata化したsnowデータred値に0~255に正規化された雪の降雪量が入っている
+    snowData,
     snowDataDimensions,
+    densityControl = {
+        min: 0.2,  // 最小密度（snowAmountが最小の時）
+        max: 4.0   // 最大密度（snowAmountが最大の時）
+    }
 }) => {
     const pointsRef = useRef()
     const geometryRef = useRef()
 
-    // particleSpeeds の初期化を useState callback で行う
+    // 降雪量から密度を計算する関数
+    const calculateDensity = (snowAmount) => {
+        if (snowAmount === -1) return 0;
+
+        const normalizedValue = (snowAmount - snowDataDimensions.amaunt.min) /
+            (snowDataDimensions.amaunt.max - snowDataDimensions.amaunt.min);
+
+        // 密度を設定された範囲内に収める
+        return densityControl.min +
+            (densityControl.max - densityControl.min) * normalizedValue;
+    }
+
     const [particleSpeeds] = useState(() => {
         const speeds = new Float32Array(count)
         for (let i = 0; i < count; i++) {
-            speeds[i] = fallSpeed * (0.8 + Math.random() * 0.4)
+            speeds[i] = baseFallSpeed * (0.8 + Math.random() * 0.4)
         }
         return speeds
     })
 
-    // snowDataから降雪量を取得する関数
     const getSnowAmount = (x, y) => {
         if (!snowData) return 0;
 
-        // 座標をデータの配列インデックスに変換
         const px = Math.floor((x + 1) * 0.5 * snowDataDimensions.width);
         const py = Math.floor((-y + 1) * 0.5 * snowDataDimensions.height);
 
-        // 座標が範囲外の場合、適切にラップアラウンド
         const wrappedPx = ((px % snowDataDimensions.width) + snowDataDimensions.width) % snowDataDimensions.width;
         const wrappedPy = ((py % snowDataDimensions.height) + snowDataDimensions.height) % snowDataDimensions.height;
 
-        // データから値を取得
         const index = (wrappedPy * snowDataDimensions.width + wrappedPx) * 4;
-
-        // 生のr値（0-255）を取得
         const rawValue = snowData.data[index];
 
-        // r値が0の場合は-1を返す（特別な値として使用）
-        if (rawValue < 10) return -1;
+        if (rawValue <= 0) return -1;
 
-        // 降雪量の範囲を正規化
         const snowRange = snowDataDimensions.amaunt.max - snowDataDimensions.amaunt.min;
-        const snowValue = (snowData.data[index] / 255) * snowRange + snowDataDimensions.amaunt.min;
+        const snowValue = (rawValue / 255) * snowRange + snowDataDimensions.amaunt.min;
 
         return snowValue;
     }
 
-    // パーティクルサイズの計算も修正
-    const calculateParticleSize = (snowAmount) => {
-        // 降雪量をパーティクルサイズの範囲に正規化
-        const normalizedValue = (snowAmount - snowDataDimensions.amaunt.min) / (snowDataDimensions.amaunt.max - snowDataDimensions.amaunt.min);
-        return sizeRange.min + normalizedValue * (sizeRange.max - sizeRange.min);
+    const calculateParticleSpeed = (snowAmount) => {
+        if (snowAmount === -1) return baseFallSpeed;
+
+        const normalizedValue = (snowAmount - snowDataDimensions.amaunt.min) /
+            (snowDataDimensions.amaunt.max - snowDataDimensions.amaunt.min);
+
+        return baseFallSpeed + (maxFallSpeed - baseFallSpeed) * normalizedValue;
     }
 
+    const calculateParticleSize = (snowAmount) => {
+        const normalizedValue = (snowAmount - snowDataDimensions.amaunt.min) /
+            (snowDataDimensions.amaunt.max - snowDataDimensions.amaunt.min);
+        return sizeRange.min + normalizedValue * (sizeRange.max - sizeRange.min);
+    }
 
     const particles = useMemo(() => {
         const points = new Float32Array(count * 3)
         const colors = new Float32Array(count * 4)
         const sizes = new Float32Array(count)
+        const speeds = new Float32Array(count)
 
         const aspectRatio = snowDataDimensions?.width / snowDataDimensions?.height || 2
         const xRange = aspectRatio
         const yRange = 1
 
-        for (let i = 0; i < count; i++) {
+        let validParticleCount = 0;
+        let attempts = 0;
+        const maxAttempts = count * 10; // 無限ループ防止
+
+        while (validParticleCount < count && attempts < maxAttempts) {
+            const x = (Math.random() * 2 - 1) * xRange
+            const y = (Math.random() * 2 - 1) * yRange
+            const snowAmount = getSnowAmount(x, y)
+
+            // 密度に基づいてパーティクルを配置するかどうかを決定
+            const density = calculateDensity(snowAmount);
+            if (snowAmount !== -1 && Math.random() < density) {
+                points[validParticleCount * 3] = x
+                points[validParticleCount * 3 + 1] = y
+                points[validParticleCount * 3 + 2] = Math.random() * (position.maxZ - position.minZ) + position.minZ
+
+                colors[validParticleCount * 4] = 1
+                colors[validParticleCount * 4 + 1] = 1
+                colors[validParticleCount * 4 + 2] = 1
+                colors[validParticleCount * 4 + 3] = opacity
+
+                sizes[validParticleCount] = calculateParticleSize(snowAmount)
+                speeds[validParticleCount] = calculateParticleSpeed(snowAmount)
+
+                validParticleCount++;
+            }
+            attempts++;
+        }
+
+        // もし十分なパーティクルを配置できなかった場合、残りを均等に配置
+        while (validParticleCount < count) {
             const x = (Math.random() * 2 - 1) * xRange
             const y = (Math.random() * 2 - 1) * yRange
 
-            points[i * 3] = x
-            points[i * 3 + 1] = y
-            points[i * 3 + 2] = Math.random() * (position.maxZ - position.minZ) + position.minZ
+            points[validParticleCount * 3] = x
+            points[validParticleCount * 3 + 1] = y
+            points[validParticleCount * 3 + 2] = Math.random() * (position.maxZ - position.minZ) + position.minZ
 
-            const snowAmount = getSnowAmount(x, y)
+            colors[validParticleCount * 4] = 1
+            colors[validParticleCount * 4 + 1] = 1
+            colors[validParticleCount * 4 + 2] = 1
+            colors[validParticleCount * 4 + 3] = opacity * 0.5 // 低い透明度で表示
 
-            colors[i * 4] = 1
-            colors[i * 4 + 1] = 1
-            colors[i * 4 + 2] = 1
-            colors[i * 4 + 3] = snowAmount === -1 ? 0 : opacity
+            sizes[validParticleCount] = sizeRange.min
+            speeds[validParticleCount] = baseFallSpeed
 
-            sizes[i] = snowAmount === -1 ? 0 : calculateParticleSize(snowAmount)
+            validParticleCount++;
         }
 
-        return { points, colors, sizes }
-    }, [count, position.maxZ, position.minZ, opacity, snowDataDimensions, sizeRange, snowData])
+        return { points, colors, sizes, speeds }
+    }, [count, position.maxZ, position.minZ, opacity, snowDataDimensions, sizeRange, snowData, densityControl])
 
-
-    const resetParticle = (positions, index, sizes, colors) => {
+    const resetParticle = (positions, index, sizes, colors, speeds) => {
         if (!snowDataDimensions) return
 
         const aspectRatio = snowDataDimensions.width / snowDataDimensions.height
         const xRange = aspectRatio
         const yRange = 1
 
-        const x = (Math.random() * 2 - 1) * xRange
-        const y = (Math.random() * 2 - 1) * yRange
+        let x, y, snowAmount;
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        do {
+            x = (Math.random() * 2 - 1) * xRange
+            y = (Math.random() * 2 - 1) * yRange
+            snowAmount = getSnowAmount(x, y)
+            attempts++;
+        } while (
+            attempts < maxAttempts &&
+            (snowAmount === -1 || Math.random() > calculateDensity(snowAmount))
+        )
+
+        // maxAttempts回試行しても適切な位置が見つからなかった場合のフォールバック
+        if (attempts >= maxAttempts) {
+            snowAmount = snowDataDimensions.amaunt.min;
+        }
 
         positions[index * 3] = x
         positions[index * 3 + 1] = y
         positions[index * 3 + 2] = position.maxZ
 
-        const snowAmount = getSnowAmount(x, y)
+        colors[index * 4] = 1
+        colors[index * 4 + 1] = 1
+        colors[index * 4 + 2] = 1
+        colors[index * 4 + 3] = attempts >= maxAttempts ? opacity * 0.5 : opacity
 
-        if (colors) {  // colorsが存在することを確認
-            colors[index * 4] = 1
-            colors[index * 4 + 1] = 1
-            colors[index * 4 + 2] = 1
-            colors[index * 4 + 3] = snowAmount === -1 ? 0 : opacity
-        }
-
-        sizes[index] = snowAmount === -1 ? 0 : calculateParticleSize(snowAmount)
+        sizes[index] = attempts >= maxAttempts ? sizeRange.min : calculateParticleSize(snowAmount)
+        speeds[index] = attempts >= maxAttempts ? baseFallSpeed : calculateParticleSpeed(snowAmount)
     }
-
-    // デバッグ用のeffect
-    useEffect(() => {
-        if (geometryRef.current) {
-            console.log("Geometry initialized:", {
-                geometry: geometryRef.current,
-                position: geometryRef.current.attributes.position,
-                size: geometryRef.current.attributes.size
-            });
-        }
-    }, [geometryRef.current]);
 
     useFrame(() => {
         if (!geometryRef.current) return
@@ -135,13 +181,13 @@ const SnowParticles = ({
         const geometry = geometryRef.current
         const positions = geometry.attributes.position.array
         const sizes = geometry.attributes.size.array
-        const colors = geometry.attributes.color.array  // color属性の配列を取得
+        const colors = geometry.attributes.color.array
 
         for (let i = 0; i < count; i++) {
-            positions[i * 3 + 2] -= particleSpeeds[i]
+            positions[i * 3 + 2] -= particles.speeds[i]
 
             if (positions[i * 3 + 2] < position.minZ) {
-                resetParticle(positions, i, sizes, colors)  // colorsを渡す
+                resetParticle(positions, i, sizes, colors, particles.speeds)
             }
         }
 
@@ -156,36 +202,46 @@ const SnowParticles = ({
                 pointTexture: { value: null },
             },
             vertexShader: `
-                attribute float size;
-                varying vec4 vColor;
-                void main() {
-                    vColor = color;
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    gl_PointSize = size * (300.0 / -mvPosition.z);
-                    gl_Position = projectionMatrix * mvPosition;
-                }
-            `,
+            attribute float size;
+            varying vec4 vColor;
+            void main() {
+                vColor = color;
+                // アルファ値が0の場合はサイズを0にする
+                float finalSize = vColor.a <= 0.0 ? 0.0 : size;
+                vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                gl_PointSize = finalSize * (300.0 / -mvPosition.z);
+                gl_Position = projectionMatrix * mvPosition;
+            }
+        `,
             fragmentShader: `
-                varying vec4 vColor;
-                void main() {
-                    vec2 center = gl_PointCoord - vec2(0.5);
-                    float dist = length(center);
-                    
-                    // よりソフトなフェードアウト
-                    float alpha = smoothstep(0.5, 0.35, dist);
-                    
-                    // 中心部分を明るく
-                    float brightness = 1.0 - smoothstep(0.0, 0.4, dist);
-                    vec3 color = vColor.rgb * (1.0 + brightness * 0.5);
-                    
-                    gl_FragColor = vec4(color, vColor.a * alpha);
+            varying vec4 vColor;
+            void main() {
+                // アルファ値が0の場合は完全に破棄
+                if (vColor.a <= 0.4) {
+                    discard;
                 }
-            `,
+
+                vec2 center = gl_PointCoord - vec2(0.5);
+                float dist = length(center);
+                float alpha = smoothstep(0.5, 0.35, dist);
+                float brightness = 1.0 - smoothstep(0.0, 0.4, dist);
+                vec3 color = vColor.rgb * (1.0 + brightness * 0.5);
+                
+                // 最終的なアルファ値が0になる場合も破棄
+                float finalAlpha = vColor.a * alpha;
+                if (finalAlpha <= 0.4) {
+                    discard;
+                }
+                
+                gl_FragColor = vec4(color, finalAlpha);
+            }
+        `,
             transparent: true,
             depthTest: false,
             vertexColors: true,
         })
     }, [])
+
 
     return (
         <points ref={pointsRef}>
